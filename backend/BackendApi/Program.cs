@@ -1,4 +1,4 @@
-// backend/Program.cs
+// Program.cs — minimal API for Sprint1
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,18 +8,14 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Allow CORS for local dev (Vite dev server)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevCors", p =>
-        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("DevCors", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
 app.UseCors("DevCors");
 
 if (app.Environment.IsDevelopment())
@@ -28,28 +24,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// In-memory store (for Sprint 1)
+// in-memory store
 var computers = new List<Computer>();
 for (int i = 1; i <= 12; i++)
 {
-    computers.Add(new Computer
-    {
-        Id = i,
-        Number = $"PC-{i}",
-        Status = "Free", // Free / Busy / Reserved (we will use simple semantics)
-        ClientName = null,
-        EndTime = null
-    });
+    computers.Add(new Computer { Id = i, Number = $"PC-{i}", Status = "Free" });
 }
-
 var reservations = new List<Reservation>();
 
-// GET /api/computers  -- returns current view for frontend
 app.MapGet("/api/computers", () =>
 {
-    // Return camelCase object shape for JS
-    var dto = computers.Select(c => new
-    {
+    var dto = computers.Select(c => new {
         id = c.Id,
         number = c.Number,
         status = c.Status,
@@ -59,19 +44,16 @@ app.MapGet("/api/computers", () =>
     return Results.Ok(dto);
 });
 
-// POST /api/reservations  -- create a reservation (basic conflict check)
 app.MapPost("/api/reservations", (ReservationRequest req) =>
 {
     if (req == null || req.ComputerIds == null || req.ComputerIds.Length == 0)
         return Results.BadRequest("computerIds required");
-
     if (string.IsNullOrWhiteSpace(req.ClientName))
         return Results.BadRequest("clientName required");
-
     if (req.EndTime <= req.StartTime)
         return Results.BadRequest("endTime must be after startTime");
 
-    // check conflicts with existing reservations for the same pc
+    // conflict check (simple)
     foreach (var pcId in req.ComputerIds)
     {
         if (!computers.Any(c => c.Id == pcId))
@@ -98,7 +80,7 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
     };
     reservations.Add(newRes);
 
-    // If reservation is current (start <= now < end), mark computers Busy
+    // mark busy if reservation covers now
     var now = DateTime.UtcNow;
     foreach (var id in req.ComputerIds)
     {
@@ -109,19 +91,13 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
             pc.ClientName = req.ClientName;
             pc.EndTime = req.EndTime;
         }
-        else
-        {
-            // leave as Free for now; frontend can read reservations list if needed
-        }
     }
 
     return Results.Created($"/api/reservations/{newRes.Id}", newRes);
 });
 
-// GET /api/reservations  -- see all reservations (for admin)
 app.MapGet("/api/reservations", () => Results.Ok(reservations));
 
-// Simple control endpoints to manually start/stop a PC (admin actions)
 app.MapPut("/api/computers/{id:int}/start", (int id) =>
 {
     var pc = computers.FirstOrDefault(c => c.Id == id);
@@ -141,8 +117,6 @@ app.MapPut("/api/computers/{id:int}/free", (int id) =>
 
 app.Run("http://localhost:5000");
 
-// --- models used by this minimal API ---
-
 public class Computer
 {
     public int Id { get; set; }
@@ -159,7 +133,7 @@ public class Reservation
     public string ClientName { get; set; } = default!;
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    public string Status { get; set; } = "Reserved"; // Reserved / Active / Cancelled
+    public string Status { get; set; } = "Reserved";
     public DateTime CreatedAt { get; set; }
 }
 
