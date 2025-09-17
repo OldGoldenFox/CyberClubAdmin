@@ -1,4 +1,4 @@
-// backend/Program.cs
+﻿// backend/Program.cs
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Allow CORS for local dev (Vite dev server)
+// Allow CORS for local dev
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", p =>
@@ -28,7 +28,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// In-memory store (for Sprint 1)
+// In-memory store
 var computers = new List<Computer>();
 for (int i = 1; i <= 12; i++)
 {
@@ -36,7 +36,7 @@ for (int i = 1; i <= 12; i++)
     {
         Id = i,
         Number = $"PC-{i}",
-        Status = "Free", // Free / Busy / Reserved (we will use simple semantics)
+        Status = "Free",
         ClientName = null,
         EndTime = null
     });
@@ -44,22 +44,80 @@ for (int i = 1; i <= 12; i++)
 
 var reservations = new List<Reservation>();
 
-// GET /api/computers  -- returns current view for frontend
+// helper: обновить статусы перед выдачей
+void SyncStatuses()
+{
+    var now = DateTime.UtcNow;
+
+    foreach (var res in reservations.Where(r => r.Status == "Reserved" || r.Status == "Active"))
+    {
+        // если бронь началась и ещё не закончилась → Active
+        if (res.StartTime <= now && res.EndTime > now)
+        {
+            res.Status = "Active";
+            foreach (var pcId in res.ComputerIds)
+            {
+                var pc = computers.First(c => c.Id == pcId);
+                pc.Status = "Busy";
+                pc.ClientName = res.ClientName;
+                pc.EndTime = res.EndTime;
+            }
+        }
+        // если бронь закончилась → освободить
+        else if (res.EndTime <= now)
+        {
+            res.Status = "Cancelled";
+            foreach (var pcId in res.ComputerIds)
+            {
+                var pc = computers.First(c => c.Id == pcId);
+                if (pc.EndTime <= now)
+                {
+                    pc.Status = "Free";
+                    pc.ClientName = null;
+                    pc.EndTime = null;
+                }
+            }
+        }
+    }
+}
+
+// GET /api/computers
 app.MapGet("/api/computers", () =>
 {
-    // Return camelCase object shape for JS
-    var dto = computers.Select(c => new
+    SyncStatuses();
+    var now = DateTime.UtcNow;
+
+    var dto = computers.Select(c =>
     {
-        id = c.Id,
-        number = c.Number,
-        status = c.Status,
-        clientName = c.ClientName,
-        endTime = c.EndTime.HasValue ? c.EndTime.Value.ToString("o") : null
+        var nextRes = reservations
+            .Where(r => r.ComputerIds.Contains(c.Id) &&
+                        r.StartTime > now &&
+                        r.Status == "Reserved")
+            .OrderBy(r => r.StartTime)
+            .FirstOrDefault();
+
+        return new
+        {
+            id = c.Id,
+            number = c.Number,
+            status = c.Status,
+            clientName = c.ClientName,
+            endTime = c.EndTime?.ToString("o"),
+            reservation = nextRes == null ? null : new
+            {
+                reservationId = nextRes.Id,
+                clientName = nextRes.ClientName,
+                startTime = nextRes.StartTime.ToString("o"),
+                endTime = nextRes.EndTime.ToString("o"),
+                status = nextRes.Status
+            }
+        };
     });
+
     return Results.Ok(dto);
 });
 
-// POST /api/reservations  -- create a reservation (basic conflict check)
+// POST /api/reservations
 app.MapPost("/api/reservations", (ReservationRequest req) =>
 {
     if (req == null || req.ComputerIds == null || req.ComputerIds.Length == 0)
@@ -71,7 +129,7 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
     if (req.EndTime <= req.StartTime)
         return Results.BadRequest("endTime must be after startTime");
 
-    // check conflicts with existing reservations for the same pc
+    // check conflicts
     foreach (var pcId in req.ComputerIds)
     {
         if (!computers.Any(c => c.Id == pcId))
@@ -98,30 +156,19 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
     };
     reservations.Add(newRes);
 
-    // If reservation is current (start <= now < end), mark computers Busy
-    var now = DateTime.UtcNow;
-    foreach (var id in req.ComputerIds)
-    {
-        var pc = computers.First(c => c.Id == id);
-        if (req.StartTime <= now && req.EndTime > now)
-        {
-            pc.Status = "Busy";
-            pc.ClientName = req.ClientName;
-            pc.EndTime = req.EndTime;
-        }
-        else
-        {
-            // leave as Free for now; frontend can read reservations list if needed
-        }
-    }
+    SyncStatuses(); // сразу проверить
 
     return Results.Created($"/api/reservations/{newRes.Id}", newRes);
 });
 
-// GET /api/reservations  -- see all reservations (for admin)
-app.MapGet("/api/reservations", () => Results.Ok(reservations));
+// GET /api/reservations
+app.MapGet("/api/reservations", () =>
+{
+    SyncStatuses();
+    return Results.Ok(reservations);
+});
 
-// Simple control endpoints to manually start/stop a PC (admin actions)
+// Manual start/stop (админ)
 app.MapPut("/api/computers/{id:int}/start", (int id) =>
 {
     var pc = computers.FirstOrDefault(c => c.Id == id);
@@ -141,8 +188,7 @@ app.MapPut("/api/computers/{id:int}/free", (int id) =>
 
 app.Run("http://localhost:5000");
 
-// --- models used by this minimal API ---
-
+// --- models ---
 public class Computer
 {
     public int Id { get; set; }

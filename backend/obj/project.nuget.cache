@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "HRtEVdX6pmg=",
+  "dgSpecHash": "DrfyLzEG0JM=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\backend.csproj",
+  "projectFilePath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\Backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Lunti\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.8\\microsoft.aspnetcore.openapi.9.0.8.nupkg.sha512",
     "C:\\Users\\Lunti\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"

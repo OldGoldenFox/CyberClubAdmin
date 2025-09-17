@@ -81,9 +81,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\backend.csproj",
-      "projectName": "backend",
-      "projectPath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\backend.csproj",
+      "projectUniqueName": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\Backend.csproj",
+      "projectName": "Backend",
+      "projectPath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\Backend.csproj",
       "packagesPath": "C:\\Users\\Lunti\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\obj\\",
       "projectStyle": "PackageReference",
@@ -148,7 +148,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -35,7 +35,7 @@ export default function App() {
 
     return (
         <div style={{ padding: 20 }}>
-            <h1>Карта клуба — клиент</h1>
+            <h1>РљР°СЂС‚Р° РєР»СѓР±Р° вЂ” РєР»РёРµРЅС‚</h1>
             <div style={{ display: "flex", flexWrap: "wrap", maxWidth: 900 }}>
                 {pcs.map(pc => <PcCard key={pc.id} pc={pc} />)}
             </div>
