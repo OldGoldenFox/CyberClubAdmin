@@ -448,11 +448,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Lunti\\CyberClubAdmin_2\\backend\\CyberClubBackend\\CyberClubBackend.csproj",
+      "projectUniqueName": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\CyberClubBackend\\CyberClubBackend.csproj",
       "projectName": "CyberClubBackend",
-      "projectPath": "C:\\Users\\Lunti\\CyberClubAdmin_2\\backend\\CyberClubBackend\\CyberClubBackend.csproj",
+      "projectPath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\CyberClubBackend\\CyberClubBackend.csproj",
       "packagesPath": "C:\\Users\\Lunti\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Lunti\\CyberClubAdmin_2\\backend\\CyberClubBackend\\obj\\",
+      "outputPath": "C:\\Users\\Lunti\\CyberClubAdmin\\backend\\CyberClubBackend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

@@ -1,5 +1,5 @@
 // src/PcCard.jsx
-export default function PcCard({ pc }) {
+export default function PcCard({ pc, onManualStart }) {
   const now = new Date();
 
   // Цвет по статусу
@@ -42,6 +42,15 @@ export default function PcCard({ pc }) {
             📅
           </div>
         </>
+      )}
+
+      {pc.status === "Free" && (
+        <button
+          style={{ marginTop: 6, fontSize: 12 }}
+          onClick={() => onManualStart(pc.id)}
+        >
+          Занять
+        </button>
       )}
     </div>
   );
