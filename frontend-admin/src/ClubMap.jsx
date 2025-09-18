@@ -89,7 +89,7 @@ export default function ClubMap() {
               <input
                 type="text"
                 value={clientName}
-                placeholder="Имя (необязательно)"
+                placeholder="Имя клиента"
                 onChange={e => setClientName(e.target.value)}
                 style={{ marginLeft: 8 }}
               />
