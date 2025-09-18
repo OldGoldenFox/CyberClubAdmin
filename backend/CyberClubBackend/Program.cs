@@ -50,26 +50,30 @@ void SyncStatuses()
     {
         if (res.StartTime <= now && res.EndTime > now)
         {
+            // Активная бронь
             res.Status = "Active";
             foreach (var pcId in res.ComputerIds)
             {
                 var pc = computers.First(c => c.Id == pcId);
                 pc.Status = "Busy";
                 pc.ClientName = res.ClientName;
-                pc.EndTime = res.EndTime;
+                pc.StartTime = res.StartTime;   // <── ДОБАВИЛ
+                pc.EndTime = res.EndTime;       // <── ДОБАВИЛ
             }
         }
         else if (res.EndTime <= now)
         {
+            // Завершённая бронь
             res.Status = "Cancelled";
             foreach (var pcId in res.ComputerIds)
             {
                 var pc = computers.First(c => c.Id == pcId);
-                if (pc.EndTime <= now)
+                if (pc.EndTime != null && pc.EndTime <= now)
                 {
                     pc.Status = "Free";
                     pc.ClientName = null;
-                    pc.EndTime = null;
+                    pc.StartTime = null;       // <── ОБНУЛЯЕМ
+                    pc.EndTime = null;         // <── ОБНУЛЯЕМ
                 }
             }
         }
@@ -95,6 +99,7 @@ app.MapGet("/api/computers", () =>
             number = c.Number,
             status = c.Status,
             clientName = c.ClientName,
+            startTime = c.StartTime?.ToString("o"),
             endTime = c.EndTime?.ToString("o"),
             reservation = nextRes == null ? null : new
             {
@@ -169,6 +174,7 @@ app.MapPut("/api/computers/{id:int}/free", (int id) =>
     if (pc == null) return Results.NotFound();
     pc.Status = "Free";
     pc.ClientName = null;
+    pc.StartTime = null;
     pc.EndTime = null;
     return Results.NoContent();
 });
@@ -182,6 +188,7 @@ public class Computer
     public string Number { get; set; } = default!;
     public string Status { get; set; } = "Free";
     public string? ClientName { get; set; }
+    public DateTime? StartTime { get; set; }
     public DateTime? EndTime { get; set; }
 }
 

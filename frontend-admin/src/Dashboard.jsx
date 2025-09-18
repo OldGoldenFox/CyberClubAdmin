@@ -24,15 +24,15 @@ export default function Dashboard() {
 const chartData = [];
 const today = new Date();
 
-for (let h = 0; h < 24; h++) {
+for (let h = 0; h <= 24; h++) {
   const hDate = new Date(today);
   hDate.setHours(h, 0, 0, 0); // ставим конкретный час
 
   const busy = pcs.filter(pc => {
-    if (!pc.endTime) return false;
+    if (!pc.startTime || !pc.endTime) return false;
     const start = new Date(pc.startTime);
     const end = new Date(pc.endTime);
-    return start <= hDate && end >= hDate;
+    return start <= hDate && end > hDate;
   }).length;
 
   chartData.push({ hour: `${h}:00`, busy });
