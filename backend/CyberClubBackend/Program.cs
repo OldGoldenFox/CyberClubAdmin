@@ -172,12 +172,21 @@ app.MapPut("/api/computers/{id:int}/free", (int id) =>
 {
     var pc = computers.FirstOrDefault(c => c.Id == id);
     if (pc == null) return Results.NotFound();
+
+    // Находим активные брони для этого ПК
+    foreach (var res in reservations.Where(r => r.ComputerIds.Contains(id) && r.Status != "Cancelled"))
+    {
+        res.Status = "Cancelled"; // можно также добавить поле EndedEarly = true
+    }
+
     pc.Status = "Free";
     pc.ClientName = null;
     pc.StartTime = null;
     pc.EndTime = null;
+
     return Results.NoContent();
 });
+
 
 app.Run("http://localhost:5000");
 

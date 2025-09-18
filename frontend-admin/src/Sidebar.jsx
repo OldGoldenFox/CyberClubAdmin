@@ -1,7 +1,7 @@
 // src/Sidebar.jsx
 export default function Sidebar({ activeTab, setActiveTab }) {
   const tabs = [
-    { key: "dashboard", label: "Dashboard" },
+    { key: "dashboard", label: "Главная" },
     { key: "clubmap", label: "Карта клуба" },
   ];
 

@@ -1,12 +1,11 @@
-// src/ClubMap.jsx
 import { useEffect, useState } from "react";
 import PcCard from "./PcCard";
 
 export default function ClubMap() {
   const [pcs, setPcs] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [hours, setHours] = useState(1); // количество часов аренды
-  const [clientName, setClientName] = useState(""); // имя клиента
+  const [selectedPc, setSelectedPc] = useState(null); // теперь храним объект ПК
+  const [hours, setHours] = useState(1);
+  const [clientName, setClientName] = useState("");
 
   async function load() {
     try {
@@ -18,9 +17,10 @@ export default function ClubMap() {
   }
 
   function handleManualStart(id) {
-    setSelectedId(id);
+    const pc = pcs.find(p => p.id === id);
+    setSelectedPc(pc);
     setHours(1);
-    setClientName(""); // сброс имени по умолчанию
+    setClientName("");
   }
 
   async function confirmManualStart() {
@@ -34,7 +34,7 @@ export default function ClubMap() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        computerIds: [selectedId],
+        computerIds: [selectedPc.id],
         clientName: clientName || "Без имени",
         startTime: start.toISOString(),
         endTime: end.toISOString()
@@ -42,13 +42,23 @@ export default function ClubMap() {
     });
 
     if (res.ok) {
-      setSelectedId(null);
-      setHours(1);
-      setClientName("");
+      setSelectedPc(null);
       load();
     } else {
       const err = await res.text();
       alert("Ошибка: " + err);
+    }
+  }
+
+  async function handleManualFree(id) {
+    const res = await fetch(`http://localhost:5000/api/computers/${id}/free`, {
+      method: "PUT"
+    });
+    if (res.ok) {
+      await load();           // сначала обновляем список ПК
+      setSelectedPc(null);    // потом закрываем модалку
+    } else {
+      alert("Не удалось завершить сеанс");
     }
   }
 
@@ -63,11 +73,15 @@ export default function ClubMap() {
       <h1>Карта клуба</h1>
       <div style={{ display: "flex", flexWrap: "wrap", maxWidth: 900 }}>
         {pcs.map(pc => (
-          <PcCard key={pc.id} pc={pc} onManualStart={handleManualStart} />
+          <PcCard
+            key={pc.id}
+            pc={pc}
+            onManualStart={handleManualStart}
+          />
         ))}
       </div>
 
-      {selectedId && (
+      {selectedPc && (
         <div style={{
           position: "fixed",
           top: 0, left: 0, right: 0, bottom: 0,
@@ -83,35 +97,46 @@ export default function ClubMap() {
             borderRadius: 6,
             minWidth: 300
           }}>
-            <h3>Занять ПК #{selectedId}</h3>
-            <label>
-              Имя клиента:
-              <input
-                type="text"
-                value={clientName}
-                placeholder="Имя клиента"
-                onChange={e => setClientName(e.target.value)}
-                style={{ marginLeft: 8 }}
-              />
-            </label>
-            <br />
-            <label style={{ marginTop: 10, display: "block" }}>
-              Время аренды (часы):
-              <input
-                type="number"
-                value={hours}
-                min={1}
-                max={12}
-                onChange={e => setHours(e.target.value)}
-                style={{ marginLeft: 8, width: 50 }}
-              />
-            </label>
-            <br />
-            <button onClick={confirmManualStart} style={{ marginTop: 10 }}>
-              Подтвердить
-            </button>
-            <button onClick={() => setSelectedId(null)} style={{ marginLeft: 10 }}>
-              Отмена
+            <h3>ПК #{selectedPc.number}</h3>
+            {selectedPc.status === "Busy" ? (
+              <>
+                <p>Клиент: {selectedPc.clientName}</p>
+                <p>До: {new Date(selectedPc.endTime).toLocaleTimeString()} ({Math.round((new Date(selectedPc.endTime) - new Date()) / 36e5)} ч)</p>
+                <button onClick={() => handleManualFree(selectedPc.id)} style={{ marginTop: 10 }}>
+                  Завершить сеанс
+                </button>
+              </>
+            ) : (
+              <>
+                <label>
+                  Имя клиента:
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={e => setClientName(e.target.value)}
+                    style={{ marginLeft: 8 }}
+                  />
+                </label>
+                <br />
+                <label style={{ marginTop: 10, display: "block" }}>
+                  Время аренды (часы):
+                  <input
+                    type="number"
+                    value={hours}
+                    min={1}
+                    max={12}
+                    onChange={e => setHours(e.target.value)}
+                    style={{ marginLeft: 8, width: 50 }}
+                  />
+                </label>
+                <br />
+                <button onClick={confirmManualStart} style={{ marginTop: 10 }}>
+                  Подтвердить
+                </button>
+              </>
+            )}
+            <button onClick={() => setSelectedPc(null)} style={{ marginLeft: 10, marginTop: 10 }}>
+              Закрыть
             </button>
           </div>
         </div>
