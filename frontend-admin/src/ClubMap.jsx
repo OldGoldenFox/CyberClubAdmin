@@ -101,7 +101,8 @@ export default function ClubMap() {
             {selectedPc.status === "Busy" ? (
               <>
                 <p>Клиент: {selectedPc.clientName}</p>
-                <p>До: {new Date(selectedPc.endTime).toLocaleTimeString()} ({Math.round((new Date(selectedPc.endTime) - new Date()) / 36e5)} ч)</p>
+                <p>От: {new Date(selectedPc.startTime).toLocaleTimeString([], {hour: "2-digit",  minute: "2-digit",})}</p>
+                <p>До: {new Date(selectedPc.endTime).toLocaleTimeString([], {hour: "2-digit",  minute: "2-digit",})} ({Math.round((new Date(selectedPc.endTime) - new Date()) / 36e5)} ч)</p>
                 <button onClick={() => handleManualFree(selectedPc.id)} style={{ marginTop: 10 }}>
                   Завершить сеанс
                 </button>

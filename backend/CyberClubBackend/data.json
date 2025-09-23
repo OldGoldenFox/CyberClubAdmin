@@ -1,0 +1,96 @@
+{
+  "Computers": [
+    {
+      "Id": 1,
+      "Number": "PC-1",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 2,
+      "Number": "PC-2",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 3,
+      "Number": "PC-3",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 4,
+      "Number": "PC-4",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 5,
+      "Number": "PC-5",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 6,
+      "Number": "PC-6",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 7,
+      "Number": "PC-7",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 8,
+      "Number": "PC-8",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 9,
+      "Number": "PC-9",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    },
+    {
+      "Id": 10,
+      "Number": "PC-10",
+      "Status": "Free",
+      "ClientName": null,
+      "StartTime": null,
+      "EndTime": null,
+      "ActiveReservationId": null
+    }
+  ],
+  "Reservations": [],
+  "NextReservationId": 1
+}

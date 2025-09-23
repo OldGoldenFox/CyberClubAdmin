@@ -7,13 +7,13 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Allow CORS для фронта
+// ✅ Разрешаем CORS для фронта
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevCors", p =>
-        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("DevCors", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
+// Swagger для документации
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -27,16 +27,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// --- In-memory store ---
+// --- In-memory store (в памяти, без БД) ---
 var computers = new List<Computer>();
 for (int i = 1; i <= 12; i++)
 {
-    computers.Add(new Computer
-    {
-        Id = i,
-        Number = $"PC-{i}",
-        Status = "Free"
-    });
+    computers.Add(new Computer { Id = i, Number = $"PC-{i}", Status = "Free" });
 }
 
 var reservations = new List<Reservation>();
@@ -50,37 +45,31 @@ void SyncStatuses()
     {
         if (res.StartTime <= now && res.EndTime > now)
         {
-            // Активная бронь
+            // ✅ Активная бронь
             res.Status = "Active";
             foreach (var pcId in res.ComputerIds)
             {
                 var pc = computers.First(c => c.Id == pcId);
                 pc.Status = "Busy";
-                pc.ClientName = res.ClientName;
-                pc.StartTime = res.StartTime;   // <── ДОБАВИЛ
-                pc.EndTime = res.EndTime;       // <── ДОБАВИЛ
             }
         }
         else if (res.EndTime <= now)
         {
-            // Завершённая бронь
+            // ✅ Завершённая бронь
             res.Status = "Cancelled";
             foreach (var pcId in res.ComputerIds)
             {
                 var pc = computers.First(c => c.Id == pcId);
-                if (pc.EndTime != null && pc.EndTime <= now)
+                if (res.EndTime <= now)
                 {
                     pc.Status = "Free";
-                    pc.ClientName = null;
-                    pc.StartTime = null;       // <── ОБНУЛЯЕМ
-                    pc.EndTime = null;         // <── ОБНУЛЯЕМ
                 }
             }
         }
     }
 }
 
-// --- GET: ПК ---
+// --- GET: список ПК ---
 app.MapGet("/api/computers", () =>
 {
     SyncStatuses();
@@ -98,10 +87,7 @@ app.MapGet("/api/computers", () =>
             id = c.Id,
             number = c.Number,
             status = c.Status,
-            clientName = c.ClientName,
-            startTime = c.StartTime?.ToString("o"),
-            endTime = c.EndTime?.ToString("o"),
-            reservation = nextRes == null ? null : new
+            nextReservation = nextRes == null ? null : new
             {
                 reservationId = nextRes.Id,
                 clientName = nextRes.ClientName,
@@ -115,9 +101,46 @@ app.MapGet("/api/computers", () =>
     return Results.Ok(dto);
 });
 
-// --- POST: бронирование ---
+// --- GET: список завершённых сессий ---
+app.MapGet("/api/sessions/completed", () =>
+{
+    var completed = reservations
+        .Where(r => r.Status == "Cancelled")
+        .OrderByDescending(r => r.EndTime)
+        .Select(r => new
+        {
+            date = r.EndTime.Date.ToString("yyyy-MM-dd"),
+            clientName = r.ClientName,
+            startTime = r.StartTime.ToString("HH:mm"),
+            endTime = r.EndTime.ToString("HH:mm")
+        });
+
+    return Results.Ok(completed);
+});
+
+// --- GET: список всех резерваций ---
+app.MapGet("/api/reservations", () =>
+{
+    var all = reservations
+        .OrderByDescending(r => r.StartTime)
+        .Select(r => new
+        {
+            id = r.Id,
+            clientName = r.ClientName,
+            computerIds = r.ComputerIds,
+            startTime = r.StartTime.ToString("yyyy-MM-dd HH:mm"),
+            endTime = r.EndTime.ToString("yyyy-MM-dd HH:mm"),
+            status = r.Status,
+            createdAt = r.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+        });
+
+    return Results.Ok(all);
+});
+
+// --- POST: создание брони ---
 app.MapPost("/api/reservations", (ReservationRequest req) =>
 {
+    // Валидация
     if (req == null || req.ComputerIds == null || req.ComputerIds.Length == 0)
         return Results.BadRequest("computerIds required");
 
@@ -127,7 +150,7 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
     if (req.EndTime <= req.StartTime)
         return Results.BadRequest("endTime must be after startTime");
 
-    // Проверка конфликтов
+    // Проверка на конфликты
     foreach (var pcId in req.ComputerIds)
     {
         if (!computers.Any(c => c.Id == pcId))
@@ -142,6 +165,7 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
             return Results.Conflict($"Computer {pcId} is already reserved in this period");
     }
 
+    // ✅ Создаём бронь
     var newRes = new Reservation
     {
         Id = reservations.Count + 1,
@@ -159,11 +183,12 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
     return Results.Created($"/api/reservations/{newRes.Id}", newRes);
 });
 
-// --- PUT: вручную start/free ---
+// --- PUT: вручную старт/освободить ПК ---
 app.MapPut("/api/computers/{id:int}/start", (int id) =>
 {
     var pc = computers.FirstOrDefault(c => c.Id == id);
     if (pc == null) return Results.NotFound();
+
     pc.Status = "Busy";
     return Results.NoContent();
 });
@@ -173,32 +198,24 @@ app.MapPut("/api/computers/{id:int}/free", (int id) =>
     var pc = computers.FirstOrDefault(c => c.Id == id);
     if (pc == null) return Results.NotFound();
 
-    // Находим активные брони для этого ПК
+    // Находим активные брони и помечаем как завершённые
     foreach (var res in reservations.Where(r => r.ComputerIds.Contains(id) && r.Status != "Cancelled"))
     {
-        res.Status = "Cancelled"; // можно также добавить поле EndedEarly = true
+        res.Status = "Cancelled";
     }
 
     pc.Status = "Free";
-    pc.ClientName = null;
-    pc.StartTime = null;
-    pc.EndTime = null;
-
     return Results.NoContent();
 });
 
-
-app.Run("http://localhost:5000");
+app.Run("http://0.0.0.0:5000");
 
 // --- Models ---
 public class Computer
 {
     public int Id { get; set; }
     public string Number { get; set; } = default!;
-    public string Status { get; set; } = "Free";
-    public string? ClientName { get; set; }
-    public DateTime? StartTime { get; set; }
-    public DateTime? EndTime { get; set; }
+    public string Status { get; set; } = "Free"; // Free / Busy
 }
 
 public class Reservation

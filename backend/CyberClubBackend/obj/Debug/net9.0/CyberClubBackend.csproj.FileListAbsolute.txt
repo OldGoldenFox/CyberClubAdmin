@@ -67,3 +67,4 @@ C:\Users\Lunti\CyberClubAdmin\backend\CyberClubBackend\obj\Debug\net9.0\refint\C
 C:\Users\Lunti\CyberClubAdmin\backend\CyberClubBackend\obj\Debug\net9.0\CyberClubBackend.pdb
 C:\Users\Lunti\CyberClubAdmin\backend\CyberClubBackend\obj\Debug\net9.0\CyberClubBackend.genruntimeconfig.cache
 C:\Users\Lunti\CyberClubAdmin\backend\CyberClubBackend\obj\Debug\net9.0\ref\CyberClubBackend.dll
+C:\Users\Lunti\CyberClubAdmin\backend\CyberClubBackend\bin\Debug\net9.0\data.json
