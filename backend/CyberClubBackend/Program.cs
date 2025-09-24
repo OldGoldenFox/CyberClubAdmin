@@ -77,29 +77,38 @@ app.MapGet("/api/computers", () =>
 
     var dto = computers.Select(c =>
     {
-        var nextRes = reservations
+        var futureRes = reservations
             .Where(r => r.ComputerIds.Contains(c.Id) && r.StartTime > now && r.Status == "Reserved")
             .OrderBy(r => r.StartTime)
-            .FirstOrDefault();
+            .ToList();
 
-        return new
+        var activeRes = reservations
+    .FirstOrDefault(r => r.ComputerIds.Contains(c.Id) && r.Status == "Active");
+
+    return new
+    {
+        id = c.Id,
+        number = c.Number,
+        status = c.Status,
+        clientName = activeRes?.ClientName,
+        startTime = activeRes?.StartTime.ToString("o"),
+        endTime = activeRes?.EndTime.ToString("o"),
+        hasFutureReservations = futureRes.Any(),
+        futureReservations = futureRes.Select(r => new
         {
-            id = c.Id,
-            number = c.Number,
-            status = c.Status,
-            nextReservation = nextRes == null ? null : new
-            {
-                reservationId = nextRes.Id,
-                clientName = nextRes.ClientName,
-                startTime = nextRes.StartTime.ToString("o"),
-                endTime = nextRes.EndTime.ToString("o"),
-                status = nextRes.Status
-            }
-        };
-    });
+            reservationId = r.Id,
+            clientName = r.ClientName,
+            startTime = r.StartTime.ToString("o"),
+            endTime = r.EndTime.ToString("o"),
+            status = r.Status
+        })
+    };
+
+        });
 
     return Results.Ok(dto);
 });
+
 
 // --- GET: список завершённых сессий ---
 app.MapGet("/api/sessions/completed", () =>
@@ -109,7 +118,7 @@ app.MapGet("/api/sessions/completed", () =>
         .OrderByDescending(r => r.EndTime)
         .Select(r => new
         {
-            date = r.EndTime.Date.ToString("yyyy-MM-dd"),
+            date = r.EndTime.ToString("yyyy-MM-dd"), // дату можно оставить
             clientName = r.ClientName,
             startTime = r.StartTime.ToString("HH:mm"),
             endTime = r.EndTime.ToString("HH:mm")
@@ -122,16 +131,16 @@ app.MapGet("/api/sessions/completed", () =>
 app.MapGet("/api/reservations", () =>
 {
     var all = reservations
-        .OrderByDescending(r => r.StartTime)
+        .OrderByDescending(r => r.Id)
         .Select(r => new
         {
             id = r.Id,
             clientName = r.ClientName,
             computerIds = r.ComputerIds,
-            startTime = r.StartTime.ToString("yyyy-MM-dd HH:mm"),
-            endTime = r.EndTime.ToString("yyyy-MM-dd HH:mm"),
+            startTime = r.StartTime.ToString("o"), // ✅ ISO
+            endTime = r.EndTime.ToString("o"),     // ✅ ISO
             status = r.Status,
-            createdAt = r.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+            createdAt = r.CreatedAt.ToString("o")  // ✅ ISO
         });
 
     return Results.Ok(all);
@@ -183,14 +192,82 @@ app.MapPost("/api/reservations", (ReservationRequest req) =>
     return Results.Created($"/api/reservations/{newRes.Id}", newRes);
 });
 
+// --- POST: создать бронь прямо с ПК ---
+app.MapPost("/api/computers/{id:int}/reserve", (int id, ReservationRequest req) =>
+{
+    if (!computers.Any(c => c.Id == id))
+        return Results.NotFound($"Computer {id} not found");
+
+    if (string.IsNullOrWhiteSpace(req.ClientName))
+        return Results.BadRequest("clientName required");
+
+    if (req.EndTime <= req.StartTime)
+        return Results.BadRequest("endTime must be after startTime");
+
+    // Проверка на конфликты
+    var conflict = reservations.Any(r =>
+        r.ComputerIds.Contains(id) &&
+        !(req.EndTime <= r.StartTime || req.StartTime >= r.EndTime) &&
+        r.Status != "Cancelled");
+
+    if (conflict)
+        return Results.Conflict($"Computer {id} is already reserved in this period");
+
+    var now = DateTime.UtcNow;
+
+    // ✅ Создаём бронь
+    var newRes = new Reservation
+    {
+        Id = reservations.Count + 1,
+        ComputerIds = new List<int> { id },
+        ClientName = req.ClientName,
+        StartTime = req.StartTime,
+        EndTime = req.EndTime,
+        Status = req.StartTime <= now && req.EndTime > now ? "Active" : "Reserved",
+        CreatedAt = now
+    };
+
+    reservations.Add(newRes);
+    SyncStatuses();
+
+    return Results.Created($"/api/reservations/{newRes.Id}", newRes);
+});
+
+
 // --- PUT: вручную старт/освободить ПК ---
 app.MapPut("/api/computers/{id:int}/start", (int id) =>
 {
     var pc = computers.FirstOrDefault(c => c.Id == id);
     if (pc == null) return Results.NotFound();
 
+    var now = DateTime.UtcNow;
+    var fiveMinutesLater = now.AddMinutes(5);
+
+    // Найдём ближайшую резервацию, которая начинается в ближайшие 5 минут
+    var res = reservations.FirstOrDefault(r =>
+        r.ComputerIds.Contains(id) &&
+        r.Status == "Reserved" &&
+        r.StartTime >= now &&
+        r.StartTime <= fiveMinutesLater);
+
+    if (res == null)
+        return Results.NotFound("Нет подходящей резервации для активации");
+
+    // Обновляем бронь
+    res.Status = "Active";
+
+    // Обновляем ПК
     pc.Status = "Busy";
-    return Results.NoContent();
+
+    return Results.Ok(new
+    {
+        id = pc.Id,
+        number = pc.Number,
+        status = pc.Status,
+        clientName = res.ClientName,
+        startTime = res.StartTime.ToString("o"),
+        endTime = res.EndTime.ToString("o")
+    });
 });
 
 app.MapPut("/api/computers/{id:int}/free", (int id) =>
@@ -198,15 +275,19 @@ app.MapPut("/api/computers/{id:int}/free", (int id) =>
     var pc = computers.FirstOrDefault(c => c.Id == id);
     if (pc == null) return Results.NotFound();
 
+    var now = DateTime.UtcNow;
+
     // Находим активные брони и помечаем как завершённые
-    foreach (var res in reservations.Where(r => r.ComputerIds.Contains(id) && r.Status != "Cancelled"))
+    foreach (var res in reservations.Where(r => r.ComputerIds.Contains(id) && r.Status == "Active"))
     {
         res.Status = "Cancelled";
+        res.EndTime = now; // ✅ фиксируем момент завершения
     }
 
     pc.Status = "Free";
     return Results.NoContent();
 });
+
 
 app.Run("http://0.0.0.0:5000");
 

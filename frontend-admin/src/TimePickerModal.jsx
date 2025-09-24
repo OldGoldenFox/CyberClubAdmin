@@ -10,7 +10,7 @@ export default function TimePickerModal({ onClose, onSelect, reservations, activ
   const [selectedHour, setSelectedHour] = useState(null);
   const [selectedMinute, setSelectedMinute] = useState(null);
 
- function isSlotBlocked(h, m) {
+function isSlotReserved(h, m) {
   const base = day === "today" ? today : tomorrow;
   const slotStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
 
@@ -22,9 +22,7 @@ export default function TimePickerModal({ onClose, onSelect, reservations, activ
   return allReservations.some((r) => {
     const rStart = new Date(r.startTime);
     const rEnd = new Date(r.endTime);
-    const rEndWithBuffer = new Date(rEnd.getTime() + 15 * 60 * 1000); // ⏳ +15 минут
-
-    return slotStart >= rStart && slotStart < rEndWithBuffer;
+    return slotStart >= rStart && slotStart < rEnd;
   });
 }
 
@@ -37,7 +35,7 @@ export default function TimePickerModal({ onClose, onSelect, reservations, activ
 
   function isHourAvailable(h) {
     return [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].some((m) => {
-      return !isPast(h, m) && !isSlotBlocked(h, m);
+      return !isPast(h, m) && !isSlotReserved(h, m);
     });
   }
 
@@ -87,7 +85,7 @@ export default function TimePickerModal({ onClose, onSelect, reservations, activ
             <div style={minuteGrid}>
               {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((m) => {
                 if (selectedHour === null) return null;
-                const disabled = isPast(selectedHour, m) || isSlotBlocked(selectedHour, m);
+                const disabled = isPast(selectedHour, m) || isSlotReserved(selectedHour, m);
                 return (
                   <button
                     key={m}

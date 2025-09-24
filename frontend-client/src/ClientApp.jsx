@@ -166,17 +166,28 @@ export default function ClientApp() {
       )}
 
       {/* Модальное окно выбора времени */}
-      {showTimePicker && selectedPc && (
-        <TimePickerModal
-          onClose={() => setShowTimePicker(false)}
-          reservations={selectedPc.reservations || []}
-          day={day}
-          onSelect={(time) => {
-            setStartTime(time);
-            setShowTimePicker(false);
-          }}
-        />
-      )}
+{showTimePicker && selectedPc && (
+  <TimePickerModal
+    onClose={() => setShowTimePicker(false)}
+    reservations={selectedPc.futureReservations || []}
+    activeReservation={
+      selectedPc.status === "Busy" && selectedPc.startTime && selectedPc.endTime
+        ? {
+            startTime: selectedPc.startTime,
+            endTime: selectedPc.endTime,
+            status: "Active",
+            clientName: selectedPc.clientName
+          }
+        : null
+    }
+    day={day}
+    onSelect={(time) => {
+      setStartTime(time);
+      setShowTimePicker(false);
+    }}
+  />
+)}
+
     </div>
   );
 }

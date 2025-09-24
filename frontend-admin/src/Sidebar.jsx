@@ -3,6 +3,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const tabs = [
     { key: "dashboard", label: "Главная" },
     { key: "clubmap", label: "Карта клуба" },
+    { key: "schedule", label: "Расписание" }
   ];
 
   return (

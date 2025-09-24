@@ -62,7 +62,7 @@ for (let h = 0; h <= 24; h++) {
           ? <li>Нет активных бронирований</li>
           : pcs.filter(pc => pc.status === "Busy").map(pc => (
               <li key={pc.id}>
-                ПК #{pc.id} — {pc.clientName || "Гость"} до {new Date(pc.endTime).toLocaleTimeString([], {hour: "2-digit",  minute: "2-digit",})}
+                {pc.number} — {pc.clientName || "Гость"} до {new Date(pc.endTime).toLocaleTimeString([], {hour: "2-digit",  minute: "2-digit",})}
               </li>
             ))
         }
