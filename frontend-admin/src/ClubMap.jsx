@@ -108,6 +108,7 @@ if (isImmediateStart) {
     }
 
     alert("Бронь создана");
+    setSelectedPc(null); // 👈 закрываем модалку
     setClientName("");
     setHours(1);
     setStartTime(null);
@@ -229,6 +230,7 @@ if (isImmediateStart) {
             if (res.ok) {
               load();
               alert(`Сеанс продлён на ${min} минут`);
+              setSelectedPc(null);
             } else {
               alert("Ошибка продления");
             }

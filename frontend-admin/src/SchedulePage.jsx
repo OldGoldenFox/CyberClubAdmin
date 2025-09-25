@@ -26,31 +26,37 @@ export default function SchedulePage() {
     load();
   }, []);
 
-  async function handleUpdateBooking(updated) {
-    try {
-      const res = await fetch(`http://localhost:5000/api/reservations/${updated.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startTime: updated.startTime,
-          endTime: updated.endTime
-        }),
-      });
+async function handleUpdateBooking(updated) {
+  try {
+    const res = await fetch(`http://localhost:5000/api/reservations/${updated.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        startTime: updated.startTime,
+        endTime: updated.endTime
+      }),
+    });
 
-      if (!res.ok) throw new Error("Ошибка при обновлении");
-
-      const updatedFromServer = await res.json();
-
-      setReservations((prev) =>
-        prev.map((r) => (r.id === updatedFromServer.id ? updatedFromServer : r))
-      );
-
-      setSelectedBooking(null);
-    } catch (err) {
-      console.error("Ошибка обновления:", err);
-      alert("Не удалось обновить бронь");
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText || "Ошибка при обновлении");
     }
+
+    // ✅ Если сервер вернул 204 No Content — просто обновляем вручную
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === updated.id
+          ? { ...r, startTime: updated.startTime, endTime: updated.endTime }
+          : r
+      )
+    );
+
+    setSelectedBooking(null);
+  } catch (err) {
+    console.error("Ошибка обновления:", err);
+    alert("Не удалось обновить бронь");
   }
+}
 
 
 

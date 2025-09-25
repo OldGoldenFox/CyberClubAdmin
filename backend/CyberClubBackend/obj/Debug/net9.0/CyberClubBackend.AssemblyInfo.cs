@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CyberClubBackend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a4aa7974362966b3f79b948b94e444ca28fef6ba")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5bda963e2d1d6428788a39e47fdf681e8ad7e470")]
 [assembly: System.Reflection.AssemblyProductAttribute("CyberClubBackend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CyberClubBackend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
