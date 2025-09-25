@@ -21,23 +21,24 @@
 ---
 
 ## ▶️ Запуск backend
-```bash
+```
 cd backend/CyberClubBackend
 dotnet restore
 dotnet run dev
-
+```
 ---
 
 ## 🖥️ Запуск frontend-admin
-```bash
+```
 cd frontend-admin
 npm install
 npm start
-
+```
 ---
 
 ## 🌐 Запуск frontend-client
-```bash
+```
 cd frontend-client
 npm install
 npm start
+```
